@@ -1,90 +1,94 @@
-# 📈 Time Series Analysis and Forecasting for Euro-Cycles (ECYCL)
+# Time Series Analysis and Forecasting: Euro-Cycles (ECYCL)
 
-## 📌 Project Overview
+![Python](https://img.shields.io/badge/python-3.10%2B-blue)
+![statsmodels](https://img.shields.io/badge/statsmodels-ARIMA%20%2F%20SARIMA-blueviolet)
+![License: MIT](https://img.shields.io/badge/license-MIT-green)
 
-This project analyzes and forecasts the closing stock price of **Euro-Cycles (ECYCL)**, a company listed on the **Tunis Stock Exchange**.
+**Objective:** analyze and forecast the daily closing price of **Euro-Cycles (ECYCL)**, a company listed on the
+Tunis Stock Exchange, with classical time-series models.
 
-The objective is to study historical stock price behavior, evaluate time-series forecasting models, and generate future price predictions using statistical techniques.
+The project covers the full workflow: collecting the data by web scraping, testing stationarity, identifying the
+model with ACF / PACF and `auto_arima`, comparing ARIMA and seasonal SARIMA with walk-forward validation, and
+forecasting the next 50 trading days.
 
----
+## Data
+- **Source:** daily price history scraped from [ilboursa.com](https://www.ilboursa.com/marches/historiques/ECYCL)
+  with Selenium (the scraping code is in the notebook).
+- **File:** [`data/eurocycles_stock_prices.csv`](data/eurocycles_stock_prices.csv), June 2013 to April 2026:
+  date, open, high, low, close, volume, traded value and daily change (French number format, for example `11,50`).
+- **Period modeled:** January 2015 to December 2024, **2,440 trading days**. Over this period the price rose from
+  10.87 TND to a peak of 48.35 TND (June 2016), then ended at 11.72 TND.
 
-## 🚀 Project Workflow
+## Method
+1. **Data preparation:** parse dates, sort chronologically, convert French-formatted numbers, check missing values.
+2. **Exploration:** price evolution and multiplicative decomposition (trend, yearly seasonality, residuals).
+3. **Stationarity:** Augmented Dickey-Fuller test on the price (p = 0.56, not stationary), on its logarithm
+   (p = 0.55) and on the first difference (p < 0.001, stationary), so **d = 1**.
+4. **Model identification:** ACF and PACF of the differenced series (significant spike at lag 1 in the PACF) and
+   `auto_arima` both point to **ARIMA(1,1,0)**. A seasonal **SARIMA(1,1,0)(5,1,0)[5]** (weekly cycle of 5 trading
+   days) is tested as an alternative.
+5. **Validation:** chronological 80 / 20 split (1,952 training days, 488 test days, January 2023 to December 2024)
+   with **walk-forward one-step-ahead forecasts**: each day, the model is updated with the actual price and predicts
+   the next one.
+6. **Forecast:** ARIMA(1,1,0) refitted on the full history to forecast the next 50 trading days.
 
-### 1. Data Collection
-- Scraped historical stock price data from **ilboursa.com** using **Selenium**.
-
-### 2. Exploratory Data Analysis (EDA)
-- Price trend visualization
-- Seasonal decomposition
-- Stationarity testing (ADF test)
-- ACF and PACF analysis
-
-### 3. Time Series Modeling
-Two forecasting models were developed and compared:
-
-- **ARIMA(1,1,0)**
-- **SARIMA(5,1,0)(5,1,0)**
-
-### 4. Model Evaluation
-Models were evaluated using:
-
-- RMSE (Root Mean Squared Error)
-- MAE (Mean Absolute Error)
-- MAPE (Mean Absolute Percentage Error)
-
-### 5. Forecasting
-- Generated a **50-business-day forecast** using the best-performing model.
-
----
-
-## 📊 Model Performance
+## Results
 
 | Model | RMSE | MAE | MAPE |
-|--------|--------|--------|--------|
+|---|---|---|---|
 | **ARIMA(1,1,0)** | **0.2849** | **0.1690** | **1.11%** |
-| SARIMA(5,1,0)(5,1,0) | 0.3077 | 0.1967 | 1.30% |
+| SARIMA(1,1,0)(5,1,0)[5] | 0.3077 | 0.1967 | 1.30% |
 
-###  Best Model
+- **ARIMA(1,1,0) is the best model** on all three metrics: its next-day forecasts are off by 1.11% on average.
+- The seasonal component does not improve the forecasts, so the extra complexity of SARIMA is not justified.
+- The **50-day forecast is almost flat** around 11.7 TND: the model sees no clear trend after the long decline of 2023-2024.
 
-The **ARIMA(1,1,0)** model achieved the best performance with a **MAPE of only 1.11%**, making it the selected model for forecasting.
+![Price evolution and decomposition](images/price_and_decomposition.png)
 
----
+| ACF and PACF of the differenced series | Walk-forward forecasts on the test period |
+|---|---|
+| ![ACF and PACF](images/acf_pacf.png) | ![ARIMA walk-forward forecasts](images/arima_walk_forward.png) |
 
-##  Visualizations
+![50-day forecast](images/forecast_50_days.png)
 
-### Stock Price Evolution and Seasonal Decomposition
+## Project structure
+```
+Time-Series-Analysis-and-Forecasting-for-a-comapny-/
+├── data/
+│   └── eurocycles_stock_prices.csv
+├── notebooks/
+│   └── eurocycles_time_series_forecasting.ipynb   scraping, analysis, models, forecast (comments in French)
+├── images/                                        charts used in this README
+├── requirements.txt
+└── LICENSE
+```
 
-![Price Evolution and Decomposition](https://github.com/hamzacharrad29-png/Time-Series-Analysis-and-Forecasting-for-a-comapny-/blob/578a26c528d9a9df1240eaf316f7c5b175064d7f/price%20evolution%20and%20decomposition%20.png))
+## How to run
+```bash
+git clone https://github.com/hamzacharrad29-png/Time-Series-Analysis-and-Forecasting-for-a-comapny-.git
+cd Time-Series-Analysis-and-Forecasting-for-a-comapny-
+python -m venv .venv
+source .venv/bin/activate          # Windows: .venv\Scripts\activate
+pip install -r requirements.txt
+jupyter notebook notebooks/eurocycles_time_series_forecasting.ipynb
+```
+The data is already in `data/`. Skip the scraping cell unless you want to refresh it (it needs Google Chrome and
+takes several minutes).
 
-### ACF and PACF Analysis
+## Limitations and next steps
+- **Benchmark against a naive forecast.** Predicting that tomorrow's price equals today's gives RMSE 0.2927,
+  MAE 0.1700 and MAPE 1.11% on the same test period. ARIMA(1,1,0) is only slightly better (RMSE 0.2849), which is
+  typical for stock prices: daily moves are close to a random walk. The value of the model lies more in the
+  statistical analysis than in beating the market.
+- Next-day forecasts are much easier than long horizons; the 50-day forecast carries wide uncertainty and should be
+  shown with confidence intervals.
+- Next: model returns and volatility (GARCH), add external variables (market index, volume), and compare with
+  machine-learning models.
 
-![ACF PACF](https://github.com/hamzacharrad29-png/Time-Series-Analysis-and-Forecasting-for-a-comapny-/blob/7bb67ae72cf56ae73f5e7f9c2cd0a6063bc51ab3/ACF%20PACF%20ARIMA%20.png)
-
-### ARIMA Forecast vs Actual Values
-
-![ARIMA Prediction](https://github.com/hamzacharrad29-png/Time-Series-Analysis-and-Forecasting-for-a-comapny-/blob/7bb67ae72cf56ae73f5e7f9c2cd0a6063bc51ab3/Arima%20prediction%20.png)
-
-### 50-Day Forecast
-
-![50-Day Forecast](https://github.com/hamzacharrad29-png/Time-Series-Analysis-and-Forecasting-for-a-comapny-/blob/0bf40670e1a3472ea214413fecbbe949314de2ec/Prediction%20de%2050%20jours%20.png)
-
-
-
-## 🛠️ Technologies and Libraries
-
-- **Python**
-- **Pandas** & **NumPy** – Data manipulation and numerical computations
-- **Matplotlib** & **Seaborn** – Data visualization
-- **Statsmodels** – ARIMA and SARIMA modeling
-- **Scikit-learn** – Model evaluation metrics
-- **Selenium** – Web scraping
-- **pmdarima** – Automatic ARIMA model selection and optimization
+## Tools
+Python, pandas, NumPy, Matplotlib, Seaborn, statsmodels (ADF test, ACF / PACF, seasonal decomposition, ARIMA,
+SARIMAX), pmdarima (`auto_arima`), scikit-learn (metrics), Selenium (web scraping), Jupyter Notebook.
 
 ## Author
-Hamza Charrad
-
-Aspiring Data Analyst | Machine Learning Enthusiast
-
-LinkedIn:
-[https://www.linkedin.com/in/hamza-charrad/]  
-
+**Hamza Charrad**, Data Analyst
+[LinkedIn](https://www.linkedin.com/in/hamza-charrad/) · [Portfolio](https://hamzacharrad29-png.github.io/Portfolio/)
