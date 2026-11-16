@@ -53,7 +53,7 @@ forecasting the next 50 trading days.
 
 ## Project structure
 ```
-Time-Series-Analysis-and-Forecasting-for-a-comapny-/
+Time-Series-Analysis-and-Forecasting-for-a-Company/
 ├── data/
 │   └── eurocycles_stock_prices.csv
 ├── notebooks/
@@ -65,8 +65,8 @@ Time-Series-Analysis-and-Forecasting-for-a-comapny-/
 
 ## How to run
 ```bash
-git clone https://github.com/hamzacharrad29-png/Time-Series-Analysis-and-Forecasting-for-a-comapny-.git
-cd Time-Series-Analysis-and-Forecasting-for-a-comapny-
+git clone https://github.com/hamzacharrad29-png/Time-Series-Analysis-and-Forecasting-for-a-Company.git
+cd Time-Series-Analysis-and-Forecasting-for-a-Company
 python -m venv .venv
 source .venv/bin/activate          # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
